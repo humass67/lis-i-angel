@@ -1,0 +1,552 @@
+/* styles.css — оболочка игры: экраны, HUD, диалоги, сенсорное управление. */
+html{font-size:16px !important; -webkit-text-size-adjust:100%; text-size-adjust:100%}
+:root{
+  --bg:#07080a; --bg2:#0e1013; --panel:#12151a; --line:#22262c;
+  --tx:#dcdee4; --tx2:#98a0aa; --tx3:#666d76;
+  --accent:#8fd6ae; --fox:#e09128; --angel:#c8b8d8;
+  --mono:"Cascadia Mono","Consolas","DejaVu Sans Mono",monospace;
+  --ui:"Segoe UI",system-ui,-apple-system,Inter,Roboto,Arial,sans-serif;
+  /* высота окна диалога: растёт с кадром (на 1440p бокс был «полоской» 118px),
+     длинная реплика не налезает на портрет (раунд 2 UX, п.14) */
+  --vnH: clamp(118px, 15vh, 190px);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--tx);
+  font:15px/1.6 var(--ui);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  overscroll-behavior:none;
+  user-select:none; -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.mono{font-family:var(--mono)}
+
+/* ───────────── экраны ───────────── */
+.screen{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 35%, #14181e 0%, #07080a 70%);
+  padding:20px;
+}
+.screen.active{display:flex}
+#scrGame.active{display:flex; padding:0; background:#000}
+
+.panel{
+  width:100%; max-width:520px;
+  text-align:center;
+}
+.panel.wide{max-width:760px}
+
+.logo{
+  margin:0 0 6px;
+  font:700 40px/1.05 var(--ui);
+  letter-spacing:1.96px;
+  color:#e8e6e0;
+  text-shadow:0 0 28px rgba(143,214,174,.18);
+}
+.logo span{color:var(--fox); font-weight:400; font-size:26px; letter-spacing:0.7px}
+.logo.small{font-size:30px; letter-spacing:4.2px}
+h2{margin:0 0 14px; font:600 19px/1.3 var(--ui); letter-spacing:1.4px; color:#cfd3d9}
+.sub{margin:0 0 22px; color:var(--tx2); font-size:14px}
+.keys{margin-top:22px; color:var(--tx3); font-size:11px; letter-spacing:0.84px}
+
+/* кнопки */
+.menu{display:flex; flex-direction:column; gap:9px; align-items:center}
+button{
+  font:600 13px/1 var(--ui); letter-spacing:0.98px;
+  color:var(--tx); background:#181c21;
+  border:1px solid var(--line); border-radius:8px;
+  padding:11px 20px; min-width:190px;
+  cursor:pointer; transition:background .15s,border-color .15s,color .15s;
+}
+button:hover:not(:disabled){background:#1f242b; border-color:#3a4048}
+button:active:not(:disabled){transform:translateY(1px)}
+button.big{
+  font-size:15px; padding:15px 26px; min-width:220px;
+  background:#1d2a23; border-color:#2f4a3a; color:#c8e8d4;
+}
+button.big:hover{background:#243529; border-color:#3f6650}
+button.ghost{background:transparent; border-color:#22262c; color:var(--tx3); min-width:150px; font-size:11px}
+button.ghost:hover{color:var(--tx2)}
+button.on{border-color:#3f6650; color:#a8d8bc}
+button:disabled{opacity:.34; cursor:default}
+
+/* ───── главное меню в стиле Valve (Half-Life 2) ───── */
+.vmenu{
+  justify-content:flex-start; align-items:stretch; flex-direction:column;
+  background:
+    linear-gradient(180deg, rgba(7,8,10,.15) 0%, rgba(7,8,10,.55) 60%, #07080a 100%),
+    radial-gradient(ellipse farthest-side at 70% 30%, #2a2622 0%, #0c0d0f 100%);
+  padding:48px 64px;
+  background-color:#07080a;
+}
+.vmenu{isolation:isolate}
+.menu-scene{position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none}
+.vmenu > *:not(.menu-scene){position:relative; z-index:1}
+.vm-title{text-align:left}
+.vm-logo{
+  margin:0; font:300 54px/1 var(--ui); letter-spacing:3.08px;
+  color:#e9e7e2; text-shadow:0 2px 14px rgba(0,0,0,.6);
+}
+.vm-logo sup{font-size:22px; vertical-align:top; margin-left:6px; color:#c9c6bf}
+.vm-l{font-weight:700; color:var(--fox); padding:0 1px}
+.vm-list{
+  margin-top:58px; display:flex; flex-direction:column; gap:14px;
+  align-items:flex-start;
+}
+.vm-item{
+  all:unset; cursor:pointer; box-sizing:border-box;
+  font:400 15px/1.2 var(--ui); letter-spacing:1.96px;
+  color:#c9ccd2; padding:4px 0 4px 0;
+  transition:color .12s, transform .12s;
+}
+.vm-item::before{content:'‹'; display:inline-block; margin-right:0; width:0; overflow:visible;
+  opacity:0; transform:translateX(-6px); transition:opacity .12s, transform .12s; color:#dcdee4}
+.vm-item:hover,.vm-item:focus-visible{color:#ffffff}
+.vm-item:hover::before,.vm-item:focus-visible::before{opacity:1; transform:translateX(-18px); position:relative}
+.vm-item:active{transform:translateY(1px)}
+.vm-item{text-transform:uppercase}
+.vm-item.vm-dim{color:#7a808a; font-size:13px}
+.vm-item.vm-dim:hover{color:#b9bec7}
+.vm-keys{
+  margin:auto 0 0; color:#6a7078; font:400 11px/1.4 var(--mono); letter-spacing:0.84px;
+}
+/* бейдж «игра пройдена» в меню: виден, когда сейв.finished (main.js applyMenuState) */
+.vm-done{
+  margin:6px 0 0; color:#e0b168; font:400 12px/1.4 var(--mono);
+  letter-spacing:1.6px; text-transform:uppercase;
+}
+
+.parts-list{display:flex; flex-direction:column; gap:10px; margin:14px 0; align-items:center}
+
+/* итог всего прохождения на экране финала (main.js onGameDone) */
+.final-stats{margin:18px 0 6px; display:flex; flex-direction:column; gap:6px; color:#9aa2ac; font-size:13px; letter-spacing:.6px}
+.final-stats p{margin:0}
+.final-stats[hidden]{display:none}
+.part-row{
+  font:400 15px/1.2 var(--ui); letter-spacing:.1em; color:#dcdee4;
+  padding:10px 18px; border:1px solid var(--line); border-radius:8px; min-width:260px;
+}
+.part-row.missing{color:#5c6470; border-style:dashed}
+
+/* загрузка */
+.loadbar{
+  width:240px; height:3px; margin:18px auto 8px;
+  background:#1a1e23; border-radius:2px; overflow:hidden;
+}
+.loadbar i{
+  display:block; height:100%; width:0;
+  background:linear-gradient(90deg,#7dd3a0,#8f9fd8);
+  transition:width .2s;
+}
+
+/* ───────────── сетка уровней ─────────────
+   Список уровней — .hradio внутри .hwin (index.html:87, main.js buildLevelGrid).
+   Прежние .lvl-grid/.lvl карточки удалены: в DOM нет ни одного элемента с
+   этими классами, правила были мёртвым грузом. */
+
+/* ───────────── сцена игры ───────────── */
+.stage{
+  position:relative;
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  background:#000;
+}
+/* Рамка ровно по размеру канваса — от неё позиционируются HUD и диалог,
+   иначе при леттербоксе портреты уезжают в чёрные поля. Размер выставляет
+   renderResize() в JS. */
+.frame{
+  position:relative;
+  line-height:0;
+  overflow:hidden;
+}
+#cv{
+  display:block;
+  image-rendering:pixelated;
+  image-rendering:-moz-crisp-edges;
+}
+
+/* HUD */
+.hud{
+  position:absolute; top:0; left:0; right:0;
+  padding:14px 18px;
+  pointer-events:none;
+  transition:opacity .6s;
+  text-shadow:0 1px 4px rgba(0,0,0,.95);
+}
+/* скрим под HUD: на светлом небе L1 имя уровня давало контраст 1.02:1 —
+   практически невидим (раунд 2 UX, п.1); тень WCAG не учитывает */
+.hud::before{
+  content:''; position:absolute; left:0; right:0; top:0; height:78px;
+  background:linear-gradient(180deg, rgba(4,6,9,.62), rgba(4,6,9,0));
+}
+.hud.hidden{opacity:0}
+.hud-row{display:flex; align-items:baseline; gap:14px}
+.hud-name{font:600 16px/1 var(--ui); letter-spacing:1.96px; color:#f2f4f7}
+.hud-deaths{font-size:13px; color:#b9bec7; margin-left:auto}
+/* карточка главы на входе (1.6 с): номер, название, порча.
+   Раньше название жило только мелкой строкой HUD и съедалось диалогом. */
+.chapter-card{
+  position:absolute; top:36%; left:0; right:0; z-index:46;
+  text-align:center; pointer-events:none;
+  opacity:0; transition:opacity .45s ease;
+}
+.chapter-card.show{opacity:1}
+.chapter-card[hidden]{display:none}
+.chapter-card .cnum{display:block; font-size:15px; letter-spacing:.5em; color:#9aa2ac; margin-bottom:10px}
+.chapter-card .cname{display:block; font:400 34px/1.1 var(--ui); letter-spacing:.24em; color:#f2f4f7; text-shadow:0 2px 14px rgba(0,0,0,.55)}
+.chapter-card .csub{display:block; margin-top:10px; font-size:12px; letter-spacing:.3em; color:#b9bec7; text-transform:uppercase}
+
+/* полоса босса */
+.boss-bar{
+  position:absolute; top:18px; left:50%; transform:translateX(-50%);
+  display:none; flex-direction:column; align-items:center; gap:6px;
+  pointer-events:none;
+}
+.boss-bar.show{display:flex}
+.boss-bar span{font-size:13px; letter-spacing:2.8px; color:#b9a0a0}
+.bb-track{width:220px; height:5px; background:rgba(255,255,255,.1); border:1px solid #3a2a2a}
+.bb-track i{display:block; height:100%; width:100%; background:linear-gradient(90deg,#8a2a2a,#d85050); transition:width .3s}
+
+/* подсказка */
+.hint{
+  position:absolute; left:50%; bottom:70px; transform:translateX(-50%);
+  padding:10px 18px; border-radius:22px;
+  background:rgba(8,10,12,.88); border:1px solid rgba(255,255,255,.12);
+  font-size:15px; letter-spacing:1.12px; color:#c9cdd3;
+  opacity:0; transition:opacity .5s;
+  pointer-events:none;
+  /* перенос вместо nowrap: длинная подсказка на узком кадре обрезалась
+     с двух сторон одновременно (раунд 2 UX, п.13) */
+  white-space:normal; max-width:min(560px, calc(100% - 40px)); text-align:center;
+}
+.hint.show{opacity:1}
+
+/* ───────────── диалог в стиле визуальной новеллы ─────────────
+   Крупные портреты по бокам кадра, говорящий подсвечен и чуть выдвинут,
+   слушающий затемнён и отодвинут. Текстовое окно снизу во всю ширину. */
+.vn{
+  position:absolute; inset:0;
+  display:none;
+  pointer-events:none;
+  z-index:45;
+}
+.vn.show{display:block}
+/* диалог поверх сцены-картинки: кадр служит фоном, портреты убираем,
+   чтобы не заслонять саму сцену */
+.vn.over-scene .vn-stage{display:none}
+
+/* ── 11-я сцена: один персонаж в центре экрана ──
+   Обычные портреты стоят по краям (left 2% / right 2%); здесь Лис один,
+   поэтому он встаёт по центру и крупнее — «говорит с игроком». */
+.vn.cinematic .vn-stage{overflow:visible}
+.vn.cinematic .vn-char.left{display:none}
+.vn.cinematic .vn-char{height:min(88%, 660px)}
+.vn.cinematic .vn-char.right{
+  right:auto; left:50%;
+  transform:translateX(-50%) translateY(14px) scale(.97);
+}
+.vn.cinematic .vn-char.right.on{transform:translateX(-50%) translateY(4px) scale(1)}
+.vn.cinematic .vn-char.right.active{transform:translateX(-50%) translateY(0) scale(1.04)}
+.vn.cinematic .vn-nameplate{left:50%; transform:translateX(-50%)}
+
+/* ── портреты ── */
+.vn-stage{
+  position:absolute; inset:0 0 var(--vnH) 0;
+  overflow:hidden;
+}
+.vn-char{
+  position:absolute; bottom:0;
+  height:min(72%, 420px); width:auto;
+  image-rendering:pixelated;
+  object-fit:contain; object-position:bottom;
+  opacity:0;
+  transition:opacity .34s ease, transform .34s ease, filter .34s ease;
+  will-change:transform,opacity,filter;
+  filter:drop-shadow(0 6px 22px rgba(0,0,0,.75));
+}
+.vn-char.left {left:2%;  transform:translateY(16px) scale(.96)}
+.vn-char.right{right:2%; transform:translateY(16px) scale(.96) scaleX(-1)}
+
+/* присутствует в сцене, но молчит */
+.vn-char.on{opacity:1}
+.vn-char.left.on {transform:translateY(6px) scale(.97)}
+.vn-char.right.on{transform:translateY(6px) scale(.97) scaleX(-1)}
+.vn-char.dim{
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.7)) brightness(.42) saturate(.55);
+}
+/* слушающий Лис в окне диалога теряет цвет (документ: Лис без цвета, пока говорит Ангел) */
+.vn-char.gray{
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.7)) grayscale(1) brightness(.5);
+}
+/* говорит — ярче, крупнее, выдвинут вперёд */
+.vn-char.active{opacity:1; filter:drop-shadow(0 8px 26px rgba(0,0,0,.8)) brightness(1.06)}
+.vn-char.left.active {transform:translateY(0) scale(1.03)}
+.vn-char.right.active{transform:translateY(0) scale(1.03) scaleX(-1)}
+
+/* ── текстовое окно ── */
+.vn-box{
+  position:absolute; left:0; right:0; bottom:0;
+  min-height:var(--vnH); max-height:38%;
+  padding:26px 32px 20px;
+  background:
+    linear-gradient(180deg, rgba(6,7,9,0) 0%, rgba(6,7,9,.86) 22%, rgba(5,6,8,.97) 100%);
+  border-top:1px solid rgba(255,255,255,.10);
+}
+.vn-nameplate{
+  position:absolute; top:-1px; left:32px;
+  transform:translateY(-100%);
+  padding:6px 18px 5px;
+  font:700 12px/1 var(--mono); letter-spacing:2.8px; text-transform:uppercase;
+  color:#0b0c0e;
+  background:#c8b8d8;
+  border-radius:6px 6px 0 0;
+  box-shadow:0 -2px 12px rgba(0,0,0,.5);
+}
+.vn-nameplate.fox{background:var(--fox); color:#1a1205}
+.vn-nameplate.angel{background:#c8b8d8; color:#131017}
+
+.vn-text{
+  margin:0; max-width:min(1000px, 68%);
+  font-size:clamp(18px, 1.6vw + 8px, 26px); line-height:1.55; color:#eef0f4;
+  text-shadow:0 2px 8px rgba(0,0,0,.85);
+  min-height:33px;
+  /* реплика — единственный носитель сюжета: разрешаем выделить/перевести,
+     user-select:none с body её запрещал (раунд 2 UX, п.17) */
+  user-select:text; -webkit-user-select:text;
+}
+.vn-caret{
+  position:absolute; right:30px; bottom:14px;
+  font:600 11px/1 var(--mono); letter-spacing:1.96px; color:#98a0aa;
+  opacity:0;
+  animation:vnBlink 1.05s steps(2,end) infinite;
+}
+.vn-caret.show{opacity:.85}
+@keyframes vnBlink{0%,49%{transform:translateY(0)}50%,100%{transform:translateY(3px)}}
+
+/* ───────────── мини-меню в игре ───────────── */
+.gmenu{
+  position:absolute; top:10px; right:12px;
+  display:flex; gap:6px;
+}
+.gmenu button{
+  min-width:0; width:28px; height:28px; padding:0;
+  font-size:13px; line-height:1;
+  background:rgba(6,8,11,.82); color:#c9cdd4;
+  border-color:rgba(255,255,255,.14);
+}
+.gmenu button:hover{color:#fff}
+/* на тач-экране 28×28 меньше половины рекомендованной цели (WCAG 2.5.5) */
+@media (pointer:coarse){
+  .gmenu button{width:44px; height:44px; font-size:17px}
+}
+
+/* ───────────── пауза (ESC в игре / потеря фокуса) ─────────────
+   Оверлей поверх кадра: ниже devcon (60), выше сцен (40) и HUD (45). */
+.pause-ov{
+  position:absolute; inset:0; z-index:55;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(5,7,10,.72);
+}
+.pause-ov[hidden]{display:none}
+.pause-box{
+  display:flex; flex-direction:column; gap:10px; align-items:center;
+  padding:28px 42px; border:1px solid var(--line); border-radius:12px;
+  background:rgba(10,12,16,.92);
+}
+.pause-box h2{margin:0 0 6px; font:400 22px/1 var(--ui); letter-spacing:.35em; color:#eef0f4}
+.pbtn{
+  min-width:220px; padding:10px 18px; border:1px solid var(--line); border-radius:8px;
+  background:transparent; color:#c9cdd4; font:400 14px/1 var(--ui);
+  letter-spacing:.12em; cursor:pointer;
+}
+.pbtn:hover{color:#fff; border-color:#5a626e}
+.pbtn.primary{background:#e0dcc8; color:#15171b; border-color:#e0dcc8}
+.pbtn.primary:hover{background:#fff}
+.pnote{margin:8px 0 0; color:#6a7078; font-size:11px}
+
+/* ───────────── сенсорное управление ───────────── */
+.touch{display:none}
+@media (pointer:coarse){
+  .touch{
+    display:grid; position:absolute; inset:auto 0 0 0;
+    grid-template-columns:1fr 1fr 1fr 1fr;
+    gap:8px; padding:10px 12px 16px;
+    pointer-events:none;
+  }
+  .tbtn{
+    pointer-events:auto;
+    min-width:0; height:54px; padding:0;
+    font-size:19px;
+    background:rgba(20,24,28,.72);
+    border-color:rgba(255,255,255,.14);
+    color:#cfd3d9;
+    backdrop-filter:blur(4px);
+  }
+  .tbtn.wide{font-size:11px; letter-spacing:1.12px}
+  .tbtn.jump{background:rgba(30,44,36,.78); border-color:rgba(90,150,110,.4); color:#c8e8d4}
+  .tbtn.held{background:rgba(60,70,80,.9)}
+  /* «крик» без механики уровня — мёртвая кнопка: гасим и отключаем */
+  .tbtn.disabled{opacity:.35; pointer-events:none}
+  /* крик на кулдауне — приглушаем, но оставляем нажимаемой (даст «отказ») */
+  .tbtn.cool{opacity:.55}
+  /* диалог поднимаем над кнопками .touch (54px + padding ≈ 80px).
+     Раньше здесь стоял .dialog — класса с таким именем нет в разметке
+     (элемент — .vn#dialog), поэтому правило не применялось вообще. */
+  .vn{bottom:86px}
+  .hint{bottom:140px}
+}
+
+/* узкий экран */
+@media (max-width:420px){
+  .logo{font-size:30px}
+  /* реальные классы: портрет .vn-char, текст .vn-text (.dlg-* нет в разметке) */
+  .vn-char{width:42px; height:50px}
+  .vn-text{font-size:12.5px}
+}
+
+/* (старый полноэкранный стиль, не используется окнами) ─────
+   Заголовок слева вверху, пункты — текстом капсом без рамок, фон как в меню. */
+.src{
+  justify-content:flex-start; align-items:stretch; flex-direction:column;
+  background:radial-gradient(ellipse farthest-side at 70% 30%, #2a2622 0%, #0c0d0f 100%);
+  padding:48px 64px;
+}
+.src .panel{max-width:none; width:100%; text-align:left}
+.src .panel.wide{max-width:none}
+.src h1,.src h2{margin:0; font:300 40px/1.05 var(--ui); letter-spacing:.2em; color:#e9e7e2; text-transform:uppercase}
+.src h2{font-size:30px; letter-spacing:.16em}
+.src .sub{margin:14px 0 0; color:var(--tx2); font-size:13px; letter-spacing:.06em}
+.src .loadbar{margin:24px 0 10px}
+.src .mono{font-family:var(--mono); color:#8a9099}
+/* пункты: текст, без рамок и заливки */
+.src button{
+  all:unset; cursor:pointer; box-sizing:border-box; display:block;
+  font:400 15px/1.2 var(--ui); letter-spacing:.14em; text-transform:uppercase;
+  color:#c9ccd2; padding:4px 0; margin:0;
+}
+.src button:hover,.src button:focus-visible{color:#ffffff}
+.src button.ghost{color:#7a808a; font-size:13px}
+.src button.ghost:hover{color:#b9bec7}
+.src button.big{color:#e9e7e2}
+.src .menu{display:flex; flex-direction:column; gap:14px; align-items:flex-start; margin-top:40px}
+.src .keys{margin-top:auto; font-family:var(--mono)}
+.src .lvl.locked b,.src .lvl.locked span{color:#4a5057}
+.src .part-row{border:none; border-left:none; padding:6px 0; min-width:0; color:#c9ccd2; letter-spacing:.14em}
+.src .part-row.missing{color:#4a5057}
+.src .parts-list{align-items:flex-start; gap:12px; margin:24px 0}
+
+/* ───── окна в стиле Half-Life: тёмное окно поверх затемнённой сцены меню ───── */
+.win-dim{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(4,5,7,.72); z-index:50;
+}
+.win-dim.active{display:flex}
+.hwin{
+  position:relative; width:min(640px, calc(100vw - 40px)); max-height:calc(100vh - 60px);
+  background:#15171b; border:1px solid #3a3228; border-radius:0;
+  box-shadow:0 14px 48px rgba(0,0,0,.7); display:flex; flex-direction:column;
+  font:400 14px/1.4 var(--ui); color:#d9d6cf;
+}
+.hwin-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 12px; background:linear-gradient(#2a241d,#1d1a16);
+  border-bottom:1px solid #3a3228; color:#e8a24a; letter-spacing:.06em; text-transform:uppercase; font-size:13px;
+}
+.hwin-x{all:unset; cursor:pointer; color:#e8a24a; font:700 16px/1 var(--ui); padding:0 4px}
+.hwin-x:hover{color:#ffc27a}
+.hwin-body{padding:18px 20px 16px; overflow:auto}
+.hwin-body h2{margin:0 0 12px; font:600 15px/1.3 var(--ui); letter-spacing:.04em; color:#e8a24a; text-transform:none}
+.hwin-foot{display:flex; justify-content:flex-end; gap:8px; padding:10px 14px 12px; border-top:1px solid #2a2620; background:#121316}
+.hwin button.hbtn{
+  all:unset; cursor:pointer; box-sizing:border-box; padding:6px 16px; min-width:86px; text-align:center;
+  background:#2a2620; border:1px solid #4a4236; color:#e8dccb; font:600 13px/1.2 var(--ui);
+}
+.hwin button.hbtn:hover{background:#3a332a; border-color:#7a6a52}
+.hwin button.hbtn.primary{background:#5a3e1a; border-color:#a7712e; color:#ffd9a0}
+.hwin .hrow{display:flex; align-items:center; gap:10px; padding:7px 4px; border-bottom:1px solid #22201c; color:#d9d6cf}
+.hwin .hrow.sel{background:#4a3416; color:#ffd9a0}
+.hwin .hradio{display:flex; align-items:center; gap:10px; padding:5px 0; color:#d9d6cf; cursor:pointer}
+.hwin .hradio i{width:14px; height:14px; border:1px solid #8a7a62; border-radius:50%; display:inline-block; background:#0e0f11}
+.hwin .hradio.on i{background:radial-gradient(circle,#ffd84a 0 45%,#0e0f11 46%); border-color:#ffd84a}
+.hwin .hnote{color:#e8a24a; margin:0 0 12px}
+/* ТЗ: ползунки громкости — в стиле hwin (тёплое дерево/золото) */
+.hwin .hslider{-webkit-appearance:none; appearance:none; width:130px; height:4px; border-radius:2px;
+  background:linear-gradient(90deg,#a7712e,#4a3416); outline:none; cursor:pointer}
+.hwin .hslider::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:14px; height:14px;
+  border-radius:50%; background:#ffd84a; border:1px solid #7a5a1e; cursor:pointer}
+.hwin .hslider::-moz-range-thumb{width:14px; height:14px; border-radius:50%; background:#ffd84a; border:1px solid #7a5a1e; cursor:pointer}
+.hwin .hval{min-width:42px; text-align:right; color:#a89a80; font:600 12px/1 var(--ui)}
+
+.hradios{display:flex; flex-direction:column; gap:2px; max-height:52vh; overflow:auto; padding-right:4px}
+.hradios .hradio{padding:6px 4px}
+.hradios .hradio.locked{color:#5a5f66; cursor:default}
+
+/* сцена-картинка: кадр поверх игры, закрывается ENTER/SPACE */
+.scene-img{position:absolute; inset:0; z-index:40; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden; opacity:1; transition:opacity .55s ease; pointer-events:none}
+.scene-img[hidden]{display:none}
+.scene-img.pre{opacity:0}
+.scene-img img{width:100%; height:100%; object-fit:cover; image-rendering:pixelated}
+.scene-cap{position:absolute; left:0; right:0; bottom:18px; text-align:center; color:#d8d4cc; font-size:13px; letter-spacing:1.4px; text-shadow:0 2px 8px #000}
+
+
+/* ══════════ консоль разработчика (клавиша P, тумблер в настройках) ══════════ */
+.devcon {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: none; flex-direction: column;
+  background: rgba(8, 9, 11, 0.93);
+  border-top: 2px solid #e09128;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.65);
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  color: #e8dccb;
+}
+.devcon.on { display: flex; }
+
+.devcon-log {
+  height: 44vh; min-height: 150px; overflow-y: auto;
+  padding: 10px 14px;
+  font-size: 14px; line-height: 1.45;
+  white-space: pre-wrap; word-break: break-word;
+}
+.devcon-row { color: #cdc3ad; }
+.devcon-row.cmd { color: #ffd84a; }
+.devcon-row.warn { color: #ff8a72; }
+.devcon-row.dim { color: #94896f; }
+
+.devcon-line {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(224, 145, 40, 0.35);
+  background: rgba(0, 0, 0, 0.4);
+}
+.devcon-caret { color: #e09128; font-size: 16px; }
+#devconInput {
+  flex: 1; min-width: 0;
+  background: transparent; border: 0; outline: 0;
+  color: #f6efdc; font: inherit; font-size: 15px; letter-spacing: 0.02em;
+}
+#devconInput::placeholder { color: #6d6353; }
+.devcon-hint { color: #6d6353; font-size: 12px; white-space: nowrap; }
+
+/* ───────────── плеер финальной песни («брызги») ───────────── */
+.final-player{
+  margin:20px auto 0; width:100%; max-width:460px;
+  border:1px solid var(--line); border-radius:10px;
+  background:#0e1013; padding:16px 16px 14px;
+}
+.final-player[hidden]{display:none}
+#fpViz{
+  display:block; width:100%; height:100px;
+  background:#0a0c0f; border-radius:6px; cursor:pointer;
+}
+.fp-row{display:flex; align-items:center; gap:8px; margin-top:10px}
+.fp-btn{min-width:0; padding:10px 16px; font-size:14px; font-weight:600}
+#fpSeek{flex:1; min-width:60px; cursor:pointer; accent-color:var(--fox)}
+.fp-time{font-size:13px; color:var(--tx); white-space:nowrap; letter-spacing:.4px; font-weight:600}
+.fp-row-vol{margin-top:8px}
+.fp-vol-ico{color:var(--tx); font-size:13px; font-weight:600; letter-spacing:.6px; line-height:1; flex:none; min-width:34px}
+#fpVol{flex:1; min-width:60px; cursor:pointer; accent-color:var(--fox)}
+#fpVolVal{min-width:44px; text-align:right}

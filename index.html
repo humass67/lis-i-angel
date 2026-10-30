@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ЛИС И АНГЕЛ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0b0d'/><circle cx='16' cy='12' r='6' fill='none' stroke='%23e0dcc8' stroke-width='2'/><path d='M8 26c2-5 6-7 8-7s6 2 8 7' fill='%23e09128'/></svg>">
+<link rel="stylesheet" href="styles.css?v=20261024j">
+</head>
+<body>
+
+<!-- ══════════ загрузка ══════════ -->
+<section class="screen active" id="scrLoad">
+  <div class="panel">
+    <h1 class="logo">ЛИС <span>и</span> АНГЕЛ</h1>
+    <!-- число глав ставит boot() из levelCount(): литерал «десять» остался
+         от 10 глав и врал про 11-ю — финальную сцену -->
+    <p class="sub" id="loadSub">уровни</p>
+    <div class="loadbar"><i id="loadFill"></i></div>
+    <p class="mono" id="loadLbl">0%</p>
+  </div>
+</section>
+
+<!-- ══════════ меню ══════════ -->
+<section class="screen vmenu" id="scrMenu">
+  <canvas id="menuCanvas" class="menu-scene" aria-hidden="true"></canvas>
+  <div class="vm-title">
+    <h1 class="vm-logo">ЛИС<span class="vm-l">и</span>АНГЕЛ</h1>
+    <p class="vm-done" id="vmDone" hidden>— игра пройдена —</p>
+  </div>
+  <nav class="vm-list">
+    <button class="vm-item" id="btnPlay">ИГРАТЬ</button>
+    <button class="vm-item" id="btnLevels">УРОВНИ</button>
+    <button class="vm-item" id="btnParts">ЧАСТИ ЦВЕТА</button>
+    <button class="vm-item" id="btnSettings">НАСТРОЙКИ</button>
+    <button class="vm-item" id="btnSound">ЗВУК: ВКЛ</button>
+    <button class="vm-item vm-dim" id="btnReset">СБРОСИТЬ ПРОГРЕСС</button>
+  </nav>
+  <p class="vm-keys">← → ходьба · SPACE прыжок · E крик · ESC меню</p>
+</section>
+
+<!-- ══════════ выбор уровня ══════════ -->
+
+
+
+
+
+
+
+<!-- ══════════ окна поверх меню (стиль Half-Life) ══════════ -->
+<div class="win-dim" id="winParts">
+  <div class="hwin">
+    <div class="hwin-bar"><span>Части цвета</span><button class="hwin-x" id="xParts" aria-label="закрыть">×</button></div>
+    <div class="hwin-body">
+      <h2>Фрагменты света</h2>
+      <div class="parts-list" id="partsList"></div>
+      <p class="hnote" id="partsCount"></p>
+    </div>
+    <div class="hwin-foot"><button class="hbtn primary" id="btnBackPartsMenu">Закрыть</button></div>
+  </div>
+</div>
+
+<div class="win-dim" id="winSettings">
+  <div class="hwin">
+    <div class="hwin-bar"><span>Настройки</span><button class="hwin-x" id="xSettings" aria-label="закрыть">×</button></div>
+    <div class="hwin-body">
+      <h2>Управление и звук</h2>
+      <div class="hrow"><span style="flex:1">Ходьба</span><span>← → или A / D</span></div>
+      <div class="hrow"><span style="flex:1">Прыжок</span><span>SPACE / W / ↑</span></div>
+      <div class="hrow"><span style="flex:1">Крик / лай</span><span>E или SHIFT</span></div>
+      <div class="hrow"><span style="flex:1">Диалог: дальше</span><span>ENTER / Z</span></div>
+      <div class="hrow"><span style="flex:1">Пауза</span><span>ESC</span></div>
+      <div class="hrow"><span style="flex:1">Консоль</span><span>P</span></div>
+      <p class="hnote">Буквы работают на любой раскладке — ловим символ клавиши, а не её позицию.</p>
+      <div class="hrow" style="margin-top:12px"><span style="flex:1">Звук</span><button class="hbtn" id="btnSettingsSound">вкл</button></div>
+      <div class="hrow"><span style="flex:1">Музыка</span><input type="range" id="rgMusic" class="hslider" min="0" max="100" step="1" value="100"><span class="hval" id="rgMusicVal">100%</span></div>
+      <div class="hrow"><span style="flex:1">Эффекты</span><input type="range" id="rgSfx" class="hslider" min="0" max="100" step="1" value="100"><span class="hval" id="rgSfxVal">100%</span></div>
+      <div class="hrow"><span style="flex:1">Консоль разработчика</span><button class="hbtn" id="btnSettingsConsole">выкл</button></div>
+      <h2 style="margin-top:16px">Экран и текст</h2>
+      <!-- доступность: тряска/вспышки/аберрация — авто (по prefers-reduced-motion) → вкл → выкл -->
+      <div class="hrow"><span style="flex:1">Тряска экрана</span><button class="hbtn" id="btnFxShake">авто</button></div>
+      <div class="hrow"><span style="flex:1">Вспышки</span><button class="hbtn" id="btnFxFlash">авто</button></div>
+      <div class="hrow"><span style="flex:1">Аберрация</span><button class="hbtn" id="btnFxChroma">авто</button></div>
+      <div class="hrow"><span style="flex:1">Скорость текста</span><button class="hbtn" id="btnTextSpeed">обычная</button></div>
+    </div>
+    <div class="hwin-foot">
+      <button class="hbtn" id="btnSettingsReset">Сбросить прогресс</button>
+      <button class="hbtn primary" id="btnBackSettingsMenu">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="win-dim" id="winLevels">
+  <div class="hwin">
+    <div class="hwin-bar"><span>Новая игра</span><button class="hwin-x" id="xLevels" aria-label="закрыть">×</button></div>
+    <div class="hwin-body">
+      <p class="hnote">Выбери уровень, затем нажми «Играть».</p>
+      <div class="hradios" id="lvlGrid"></div>
+    </div>
+    <div class="hwin-foot">
+      <button class="hbtn primary" id="btnLevelPlay">Играть</button>
+      <button class="hbtn" id="btnBackMenu">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ игра ══════════ -->
+<section class="screen" id="scrGame">
+  <!-- .frame имеет размер ровно как канвас: HUD и диалог позиционируются
+       от кадра игры, а не от всего окна (иначе портреты уезжают в чёрные поля) -->
+  <div class="stage"><div class="frame" id="frame">
+    <canvas id="cv" width="960" height="540"></canvas>
+
+    <!-- HUD -->
+    <div class="hud" id="hud">
+      <div class="hud-row">
+        <span class="hud-name" id="hudName">1. ПРОБУЖДЕНИЕ</span>
+        <span class="hud-deaths mono" id="hudDeaths"></span>
+      </div>
+    </div>
+
+    <!-- полоса босса -->
+    <div class="boss-bar" id="bossBar">
+      <span class="mono">ДВЕРЬ В БЕЗДНУ</span>
+      <div class="bb-track"><i id="bossFill"></i></div>
+    </div>
+
+    <!-- подсказка -->
+    <div class="hint mono" id="hint" aria-live="polite"></div>
+
+    <!-- карточка главы на входе: номер, название, что ломается -->
+    <div class="chapter-card" id="chapterCard" hidden>
+      <span class="cnum mono" id="chapN"></span>
+      <span class="cname" id="chapName"></span>
+      <span class="csub mono" id="chapSub"></span>
+    </div>
+
+    <!-- сцена-картинка (док. сюжет/0810): важные моменты показываются кадром -->
+    <div class="scene-img" id="sceneImg" hidden>
+      <img id="sceneImgPic" alt="">
+      <div class="scene-cap mono" id="sceneImgCap"></div>
+    </div>
+
+    <!-- диалог в стиле визуальной новеллы -->
+    <div class="vn" id="dialog">
+      <!-- портреты по бокам: говорящий подсвечен, слушающий затемнён -->
+      <div class="vn-stage">
+        <img class="vn-char left"  id="vnAngel" alt="Ангел">
+        <img class="vn-char right" id="vnFox"   alt="Лис">
+      </div>
+      <div class="vn-box">
+        <div class="vn-nameplate" id="dlgName">Ангел</div>
+        <p class="vn-text" id="dlgText" role="log" aria-live="polite" aria-atomic="true"></p>
+        <span class="vn-caret" id="vnCaret">ENTER / SPACE ▼</span>
+      </div>
+    </div>
+
+    <!-- сенсорное управление -->
+    <div class="touch">
+      <button class="tbtn" id="tLeft">◀</button>
+      <button class="tbtn" id="tRight">▶</button>
+      <button class="tbtn wide" id="tShout">крик</button>
+      <button class="tbtn jump" id="tJump">▲</button>
+    </div>
+
+    <!-- мини-меню -->
+    <div class="gmenu">
+      <button id="btnRetry" title="заново" aria-label="перезапустить уровень">⟲</button>
+      <button id="btnQuit" title="в меню" aria-label="выйти в меню">✕</button>
+    </div>
+
+    <!-- пауза (ESC в игре / потеря фокуса окна): мир стоит, позиция не сохраняется -->
+    <div class="pause-ov" id="pauseOv" hidden>
+      <div class="pause-box">
+        <h2>ПАУЗА</h2>
+        <button class="pbtn primary" id="btnResume">продолжить</button>
+        <button class="pbtn" id="btnPauseRetry">заново</button>
+        <button class="pbtn" id="btnPauseQuit">в меню</button>
+        <p class="pnote mono">ESC — продолжить</p>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══════════ между уровнями ══════════ -->
+<section class="screen" id="scrOutro">
+  <div class="panel">
+    <h2 id="outroTitle">пройден</h2>
+    <p class="sub mono" id="outroText"></p>
+    <div class="menu">
+      <button class="big" id="btnNext">дальше</button>
+      <button class="ghost" id="btnOutroMenu">в меню</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ финал ══════════ -->
+<section class="screen" id="scrFinal">
+  <div class="panel">
+    <h1 class="logo small">ПРОДОЛЖЕНИЕ</h1>
+    <p class="sub">
+      «Не думай, что я тебя не любил.»
+    </p>
+    <!-- итог всего прохождения: данные уже в сейве (deathsTotal/best/fragments) -->
+    <div class="final-stats mono" id="finalStats" hidden></div>
+    <div class="menu">
+      <button class="ghost" id="btnFinalMenu">в меню</button>
+    </div>
+    <!-- плеер финальной песни «брызги»: появляется после монолога Лиса -->
+    <div class="final-player" id="finalPlayer" hidden>
+      <canvas id="fpViz" width="420" height="90" title="пауза/продолжить"></canvas>
+      <div class="fp-row">
+        <button class="fp-btn" id="fpPlay">пауза</button>
+        <button class="fp-btn" id="fpRestart">заново</button>
+        <input type="range" id="fpSeek" min="0" max="1000" value="0" step="1" title="перемотка">
+        <span class="fp-time mono" id="fpTime">0:00</span>
+      </div>
+      <div class="fp-row fp-row-vol">
+        <span class="fp-vol-ico">звук</span>
+        <input type="range" id="fpVol" min="0" max="100" step="1" value="100" title="громкость">
+        <span class="fp-time mono" id="fpVolVal">100%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ консоль разработчика (клавиша P) ══════════ -->
+<div class="devcon" id="devConsole">
+  <div class="devcon-log" id="devconLog"></div>
+  <div class="devcon-line">
+    <span class="devcon-caret mono">]</span>
+    <input id="devconInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="команда или help">
+    <span class="devcon-hint mono">P / ESC — закрыть</span>
+  </div>
+</div>
+
+<script src="js/config.js?v=20261024j"></script>
+<script src="js/utils.js?v=20261024j"></script>
+<script src="js/engine.js?v=20261024j"></script>
+<script src="js/levels.js?v=20261024j"></script>
+<script src="js/assets.js?v=20261024j"></script>
+<script src="js/audio.js?v=20261024j"></script>
+<script src="js/fx.js?v=20261024j"></script>
+<script src="js/storage.js?v=20261024j"></script>
+<script src="js/render.js?v=20261024j"></script>
+<script src="js/menuscene.js?v=20261024j"></script>
+<script src="js/hud.js?v=20261024j"></script>
+<script src="js/console.js?v=20261024j"></script>
+<script src="js/game.js?v=20261024j"></script>
+<script src="js/main.js?v=20261024j"></script>
+</body>
+</html>
